@@ -1,0 +1,16 @@
+apiVersion: v2
+name: maas-middleware
+description: Helm umbrella chart for MaaS middleware dependencies
+version: 0.1.0
+type: application
+
+dependencies:
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: ">= 0.0.0"
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: ">= 0.0.0"
+  - name: kafka
+    repository: https://charts.bitnami.com/bitnami
+    version: ">= 0.0.0"
