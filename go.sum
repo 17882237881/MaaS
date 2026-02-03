@@ -1,0 +1,4 @@
+github.com/cloudwego/hertz v0.10.4 h1:xJxomApZYR67cROevam6SrtUBDvhcI4ZZhx/WgvpHwU=
+github.com/cloudwego/hertz v0.10.4/go.mod h1:tZXEi/4o7R0Ho9yw5V2C+k/wVx3S8+wuuiJGDMopnpg=
+github.com/cloudwego/kitex v0.16.0 h1:VJ7BP1drt0OMhoj4q5xjV2oDCPZRl4+1TeC9ay1uU0Y=
+github.com/cloudwego/kitex v0.16.0/go.mod h1:sQ41/oUhbcPm/aYqW16YT6omdxpvIc+GWvkw/K3VZ60=
