@@ -13,3 +13,7 @@ output "ack_cluster_id" {
 output "gpu_node_pool_id" {
   value = alicloud_cs_kubernetes_node_pool.gpu.id
 }
+
+output "oss_bucket_name" {
+  value = alicloud_oss_bucket.maas.bucket
+}

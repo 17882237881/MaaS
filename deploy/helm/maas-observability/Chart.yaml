@@ -1,0 +1,18 @@
+apiVersion: v2
+name: maas-observability
+description: Helm umbrella chart for observability stack
+version: 0.1.0
+type: application
+
+dependencies:
+  - name: kube-prometheus-stack
+    repository: https://prometheus-community.github.io/helm-charts
+    version: ">= 0.0.0"
+  - name: loki
+    repository: https://grafana.github.io/helm-charts
+    version: ">= 0.0.0"
+    condition: loki.enabled
+  - name: promtail
+    repository: https://grafana.github.io/helm-charts
+    version: ">= 0.0.0"
+    condition: promtail.enabled

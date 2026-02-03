@@ -76,3 +76,12 @@ variable "data_disk_size" {
   type    = number
   default = 120
 }
+
+variable "oss_bucket_name" {
+  type = string
+}
+
+variable "oss_bucket_acl" {
+  type    = string
+  default = "private"
+}
