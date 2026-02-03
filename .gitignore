@@ -1,0 +1,20 @@
+# Go
+/bin/
+/dist/
+/coverage/
+/tmp/
+/vendor/
+/*.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
