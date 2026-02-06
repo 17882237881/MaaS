@@ -745,6 +745,390 @@ go mod init github.com/17882237881/MaaS
 
 ---
 
+## 代码变更记录
+
+本节详细记录了节点1.1中创建的所有文件及其代码内容。
+
+### 提交信息
+```
+feat(phase1/node1.1): initialize project structure
+
+- Add api-gateway service with complete directory structure
+- Add model-registry service with complete directory structure  
+- Create go.mod with project dependencies
+- Add README.md with project overview
+- Add Makefile for build automation
+- Add .gitignore for Go projects
+- Create placeholder files for all layers
+```
+
+### 创建的文件清单
+
+#### 根目录文件
+1. `go.mod` - Go模块定义
+2. `README.md` - 项目说明文档
+3. `.gitignore` - Git忽略文件配置
+4. `Makefile` - 构建自动化脚本
+
+#### API Gateway服务 (api-gateway/)
+1. `cmd/main.go` - 服务入口
+2. `internal/config/config.go` - 配置管理
+3. `internal/handler/handler.go` - HTTP处理器
+4. `internal/middleware/middleware.go` - 中间件
+5. `internal/model/model.go` - 数据模型
+6. `internal/router/router.go` - 路由定义
+7. `internal/service/service.go` - 业务逻辑
+8. `internal/repository/repository.go` - 数据访问
+9. `pkg/logger/logger.go` - 日志工具
+10. `pkg/utils/utils.go` - 工具函数
+
+#### Model Registry服务 (model-registry/)
+1. `cmd/main.go` - 服务入口
+2. `internal/config/config.go` - 配置管理
+3. `internal/handler/handler.go` - HTTP处理器
+4. `internal/middleware/middleware.go` - 中间件
+5. `internal/model/model.go` - 数据模型
+6. `internal/router/router.go` - 路由定义
+7. `internal/service/service.go` - 业务逻辑
+8. `internal/repository/repository.go` - 数据访问
+9. `pkg/logger/logger.go` - 日志工具
+10. `pkg/utils/utils.go` - 工具函数
+
+### 文件内容详情
+
+#### 1. go.mod
+```go
+module maas-platform
+
+go 1.21
+
+require (
+	github.com/gin-gonic/gin v1.9.1
+	github.com/google/uuid v1.5.0
+	go.uber.org/zap v1.26.0
+	gorm.io/driver/postgres v1.5.4
+	gorm.io/gorm v1.25.5
+	github.com/redis/go-redis/v9 v9.3.0
+	github.com/spf13/viper v1.18.1
+	github.com/segmentio/kafka-go v0.4.46
+	google.golang.org/grpc v1.60.0
+	google.golang.org/protobuf v1.32.0
+	github.com/hibiken/asynq v0.24.1
+	github.com/casbin/casbin/v2 v2.79.0
+	github.com/prometheus/client_golang v1.17.0
+	github.com/jaegertracing/jaeger-client-go v2.30.0+incompatible
+	github.com/swaggo/swag v1.16.2
+	github.com/swaggo/gin-swagger v1.6.0
+)
+```
+
+**说明**：定义了项目依赖，包括Gin框架、GORM、Redis、Kafka、gRPC等后续阶段需要的库。
+
+#### 2. README.md
+包含项目简介、技术栈、项目结构、快速开始指南等。
+
+#### 3. .gitignore
+```gitignore
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Build output
+bin/
+dist/
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+```
+
+**说明**：标准的Go项目.gitignore，排除编译产物、IDE配置、临时文件等。
+
+#### 4. Makefile
+```makefile
+.PHONY: help build run test clean
+
+help:
+	@echo "Available targets:"
+	@echo "  build      - Build all services"
+	@echo "  run-api    - Run API Gateway"
+	@echo "  run-model  - Run Model Registry"
+	@echo "  test       - Run tests"
+	@echo "  clean      - Clean build artifacts"
+
+build:
+	@echo "Building API Gateway..."
+	@cd api-gateway && go build -o ../bin/api-gateway ./cmd/main.go
+	@echo "Building Model Registry..."
+	@cd model-registry && go build -o ../bin/model-registry ./cmd/main.go
+	@echo "Build complete!"
+
+run-api:
+	@cd api-gateway && go run ./cmd/main.go
+
+run-model:
+	@cd model-registry && go run ./cmd/main.go
+
+test:
+	@echo "Running tests..."
+	@go test ./...
+
+clean:
+	@rm -rf bin/
+	@echo "Clean complete!"
+```
+
+**说明**：提供了构建、运行、测试、清理等常用命令。
+
+#### 5. api-gateway/cmd/main.go
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	fmt.Println("MaaS API Gateway Starting...")
+	fmt.Println("Version: 0.1.0")
+	fmt.Println("Listening on :8080")
+	
+	// 保持运行
+	select {}
+}
+```
+
+**说明**：API Gateway服务的入口，目前只是打印启动信息，后续会添加Gin框架。
+
+#### 6. api-gateway/internal/config/config.go
+```go
+package config
+
+// Config holds all configuration for the API Gateway
+type Config struct {
+	Environment string
+	Port        int
+	LogLevel    string
+}
+
+// Load returns the application configuration
+func Load() *Config {
+	return &Config{
+		Environment: "development",
+		Port:        8080,
+		LogLevel:    "info",
+	}
+}
+```
+
+**说明**：配置结构体，后续会使用Viper从配置文件或环境变量加载。
+
+#### 7. api-gateway/internal/handler/handler.go
+```go
+package handler
+
+// Handler handles HTTP requests
+type Handler struct{}
+
+// NewHandler creates a new handler
+func NewHandler() *Handler {
+	return &Handler{}
+}
+```
+
+**说明**：HTTP处理器占位，后续会添加具体的请求处理方法。
+
+#### 8. api-gateway/internal/middleware/middleware.go
+```go
+package middleware
+
+// Middleware placeholder for future implementation
+```
+
+**说明**：中间件占位，后续会添加Logger、Recovery、CORS等中间件。
+
+#### 9. api-gateway/internal/model/model.go
+```go
+package model
+
+// Model placeholder for future data models
+```
+
+**说明**：数据模型占位，后续会定义用户、模型等实体。
+
+#### 10. api-gateway/internal/router/router.go
+```go
+package router
+
+// Router placeholder for future route definitions
+```
+
+**说明**：路由定义占位，后续会添加具体的路由规则。
+
+#### 11. api-gateway/internal/service/service.go
+```go
+package service
+
+// Service placeholder for future business logic
+```
+
+**说明**：业务逻辑层占位，后续会实现业务功能。
+
+#### 12. api-gateway/internal/repository/repository.go
+```go
+package repository
+
+// Repository placeholder for future data access layer
+```
+
+**说明**：数据访问层占位，后续会实现数据库操作。
+
+#### 13. api-gateway/pkg/logger/logger.go
+```go
+package logger
+
+// Logger placeholder for future logging implementation
+```
+
+**说明**：日志工具占位，后续会集成Zap日志库。
+
+#### 14. api-gateway/pkg/utils/utils.go
+```go
+package utils
+
+// Utils placeholder for future utility functions
+```
+
+**说明**：工具函数占位，后续会添加通用工具。
+
+#### 15-24. model-registry/ 下文件
+与api-gateway结构相同，只是端口改为8081。
+
+### 目录结构总览
+
+执行 `tree -L 3` 后的输出：
+```
+.
+├── Makefile
+├── README.md
+├── api-gateway
+│   ├── cmd
+│   │   └── main.go
+│   ├── internal
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── handler
+│   │   │   └── handler.go
+│   │   ├── middleware
+│   │   │   └── middleware.go
+│   │   ├── model
+│   │   │   └── model.go
+│   │   ├── repository
+│   │   │   └── repository.go
+│   │   ├── router
+│   │   │   └── router.go
+│   │   └── service
+│   │       └── service.go
+│   └── pkg
+│       ├── logger
+│       │   └── logger.go
+│       └── utils
+│           └── utils.go
+├── deploy
+├── docs
+├── go.mod
+├── model-registry
+│   ├── cmd
+│   │   └── main.go
+│   ├── internal
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── handler
+│   │   │   └── handler.go
+│   │   ├── middleware
+│   │   │   └── middleware.go
+│   │   ├── model
+│   │   │   └── model.go
+│   │   ├── repository
+│   │   │   └── repository.go
+│   │   ├── router
+│   │   │   └── router.go
+│   │   └── service
+│   │       └── service.go
+│   └── pkg
+│       ├── logger
+│       │   └── logger.go
+│       └── utils
+│           └── utils.go
+└── shared
+```
+
+### 验证步骤
+
+1. **验证Go模块**
+   ```bash
+   cat go.mod
+   # 应该看到 module maas-platform 和 go 1.21
+   ```
+
+2. **验证编译**
+   ```bash
+   make build
+   # 应该生成 bin/api-gateway 和 bin/model-registry
+   ```
+
+3. **验证运行**
+   ```bash
+   # 终端1
+   make run-api
+   # 输出: MaaS API Gateway Starting...
+
+   # 终端2
+   make run-model
+   # 输出: MaaS Model Registry Starting...
+   ```
+
+4. **验证Git**
+   ```bash
+   git log --oneline
+   # 应该看到提交记录
+   ```
+
+---
+
 ## 参考资源
 
 - [Go Modules官方文档](https://golang.org/ref/mod)
