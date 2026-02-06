@@ -1,5 +1,0 @@
-MaaS observability umbrella chart
-
-1) Update values.yaml if enabling Loki/Promtail
-2) Run: helm dependency update
-3) Install: helm install maas-observability ./deploy/helm/maas-observability

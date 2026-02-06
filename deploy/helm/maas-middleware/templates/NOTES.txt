@@ -1,5 +1,0 @@
-MaaS middleware umbrella chart
-
-1) Update values.yaml (passwords and persistence)
-2) Run: helm dependency update
-3) Install: helm install maas-middleware ./deploy/helm/maas-middleware

@@ -1,8 +1,0 @@
-kube-prometheus-stack:
-  enabled: true
-
-loki:
-  enabled: false
-
-promtail:
-  enabled: false
