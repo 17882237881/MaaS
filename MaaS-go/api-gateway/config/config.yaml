@@ -1,0 +1,45 @@
+# MaaS Platform Configuration
+# 支持环境变量覆盖，优先级：环境变量 > 配置文件 > 默认值
+
+# 环境：development, staging, production
+environment: development
+
+# 服务端口
+port: 8080
+
+# 日志级别：debug, info, warn, error
+log_level: info
+
+# 数据库配置
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  name: maas_platform
+  ssl_mode: disable
+
+# Redis配置
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+# JWT配置
+jwt:
+  secret: your-secret-key-change-in-production
+  expires_in: 86400  # 24小时
+
+# 下游服务地址
+services:
+  model_registry: http://localhost:8081
+  inference: http://localhost:8082
+  user_center: http://localhost:8083
+  billing: http://localhost:8084
+
+# 限流配置
+rate_limit:
+  enabled: true
+  rpm: 1000        # 每分钟请求数
+  burst: 100       # 突发请求数

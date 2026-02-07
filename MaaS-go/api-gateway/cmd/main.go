@@ -38,8 +38,22 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
-	// Load configuration
-	cfg := config.Load()
+	// Load configuration with hot reload support
+	cfg, err := config.LoadWithWatch(func(newCfg *config.Config) {
+		// This callback is called when config file changes
+		// You can update global settings here
+		fmt.Println("Configuration reloaded")
+	})
+	if err != nil {
+		fmt.Printf("Failed to load configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Validate that required configs are present
+	if err := validateEssentialConfig(cfg); err != nil {
+		fmt.Printf("Configuration validation failed: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Initialize logger
 	log := logger.New(cfg.LogLevel)
@@ -48,7 +62,11 @@ func main() {
 		"version", "1.0.0",
 		"environment", cfg.Environment,
 		"port", cfg.Port,
+		"config_file", "config/config.yaml",
 	)
+
+	// Print configuration summary
+	printConfigSummary(cfg, log)
 
 	// Set gin mode
 	if cfg.Environment == "production" {
@@ -70,8 +88,29 @@ func main() {
 			"status":    "ok",
 			"service":   "api-gateway",
 			"timestamp": time.Now().Unix(),
+			"config":    cfg.Environment,
 		})
 	})
+
+	// Config info endpoint (for debugging, disable in production)
+	if cfg.IsDevelopment() {
+		r.GET("/config", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"environment": cfg.Environment,
+				"port":        cfg.Port,
+				"log_level":   cfg.LogLevel,
+				"database": gin.H{
+					"host": cfg.Database.Host,
+					"port": cfg.Database.Port,
+					"name": cfg.Database.Name,
+				},
+				"redis": gin.H{
+					"host": cfg.Redis.Host,
+					"port": cfg.Redis.Port,
+				},
+			})
+		})
+	}
 
 	// Register routes
 	api := r.Group("/api/v1")
@@ -110,4 +149,51 @@ func main() {
 	}
 
 	log.Info("Server exited")
+}
+
+// validateEssentialConfig validates that essential configuration is present
+func validateEssentialConfig(cfg *config.Config) error {
+	if cfg.Environment == "" {
+		return fmt.Errorf("environment is required")
+	}
+
+	if cfg.Port <= 0 {
+		return fmt.Errorf("invalid port: %d", cfg.Port)
+	}
+
+	// In production, ensure JWT secret is properly set
+	if cfg.IsProduction() {
+		if cfg.JWT.Secret == "" {
+			return fmt.Errorf("JWT_SECRET is required in production")
+		}
+		if len(cfg.JWT.Secret) < 32 {
+			return fmt.Errorf("JWT_SECRET must be at least 32 characters in production")
+		}
+	}
+
+	return nil
+}
+
+// printConfigSummary prints a summary of the loaded configuration
+func printConfigSummary(cfg *config.Config, log *logger.Logger) {
+	log.Info("Configuration loaded",
+		"environment", cfg.Environment,
+		"port", cfg.Port,
+		"log_level", cfg.LogLevel,
+		"rate_limit_enabled", cfg.RateLimit.Enabled,
+		"rate_limit_rpm", cfg.RateLimit.RPM,
+	)
+
+	log.Info("Database configuration",
+		"host", cfg.Database.Host,
+		"port", cfg.Database.Port,
+		"name", cfg.Database.Name,
+		"ssl_mode", cfg.Database.SSLMode,
+	)
+
+	log.Info("Redis configuration",
+		"host", cfg.Redis.Host,
+		"port", cfg.Redis.Port,
+		"db", cfg.Redis.DB,
+	)
 }
