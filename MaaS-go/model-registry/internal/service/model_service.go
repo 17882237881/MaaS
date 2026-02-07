@@ -2,11 +2,19 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"maas-platform/model-registry/internal/model"
 	"maas-platform/model-registry/internal/repository"
 	"maas-platform/model-registry/pkg/logger"
+)
+
+// Service errors
+var (
+	ErrModelNotFound  = errors.New("model not found")
+	ErrDuplicateModel = errors.New("model already exists")
+	ErrInvalidInput   = errors.New("invalid input")
 )
 
 // ModelService defines the interface for model business logic
