@@ -1,0 +1,282 @@
+# 节点2.1：gRPC服务间通信
+
+> 📅 **学习时间**：5天  
+> 🎯 **目标**：实现API Gateway到Model Registry的gRPC通信
+
+## 本节你将学到
+
+1. Protocol Buffers定义接口
+2. gRPC服务端实现
+3. gRPC客户端调用
+4. 连接池和超时配置
+5. 错误处理
+
+---
+
+## 技术详解
+
+### 1. 为什么使用gRPC？
+
+**gRPC vs REST**：
+
+| 特性 | REST (HTTP/JSON) | gRPC (HTTP/2 + Protobuf) |
+|------|------------------|---------------------------|
+| 协议 | HTTP/1.1 | HTTP/2 |
+| 格式 | JSON (文本) | Protobuf (二进制) |
+| 性能 | 一般 | 高（5-10倍） |
+| 类型 | 弱类型 | 强类型 |
+| 流式 | 不支持 | 支持 |
+| 浏览器 | 原生支持 | 需要gRPC-Web |
+
+**适用场景**：
+- 微服务内部通信
+- 高性能要求
+- 多语言环境
+
+### 2. Protocol Buffers
+
+**什么是Protobuf？**
+语言中立、平台中立的数据序列化格式，定义在.proto文件中。
+
+**示例**：
+```protobuf
+syntax = "proto3";
+
+message Model {
+  string id = 1;
+  string name = 2;
+  string version = 3;
+}
+
+service ModelService {
+  rpc GetModel(GetModelRequest) returns (GetModelResponse);
+}
+```
+
+**优势**：
+- 体积小（二进制编码）
+- 速度快（解析快）
+- 自动生成代码
+
+### 3. gRPC四种服务类型
+
+**1. Unary RPC（一元RPC）**：
+```
+客户端 → 单个请求 → 服务端 → 单个响应
+```
+
+**2. Server Streaming RPC（服务端流）**：
+```
+客户端 → 单个请求 → 服务端 → 多个响应
+```
+
+**3. Client Streaming RPC（客户端流）**：
+```
+客户端 → 多个请求 → 服务端 → 单个响应
+```
+
+**4. Bidirectional Streaming RPC（双向流）**：
+```
+客户端 ←→ 多个消息 ←→ 服务端
+```
+
+### 4. gRPC连接配置
+
+**连接选项**：
+```go
+opts := []grpc.DialOption{
+    // 不安全的连接（开发环境）
+    grpc.WithTransportCredentials(insecure.NewCredentials()),
+    
+    // 保活配置
+    grpc.WithKeepaliveParams(keepalive.ClientParameters{
+        Time:                10 * time.Second,
+        Timeout:             20 * time.Second,
+        PermitWithoutStream: true,
+    }),
+    
+    // 超时配置
+    grpc.WithTimeout(30 * time.Second),
+}
+```
+
+---
+
+## 实操任务
+
+### 任务1：定义Proto接口
+
+创建 `shared/proto/model.proto`：
+- 定义Model消息
+- 定义CRUD服务接口
+- 包含标签和元数据操作
+
+### 任务2：生成Go代码
+
+使用protoc生成：
+```bash
+protoc --go_out=. --go-grpc_out=. model.proto
+```
+
+生成两个文件：
+- `model.pb.go` - 消息类型
+- `model_grpc.pb.go` - gRPC接口
+
+### 任务3：实现gRPC服务端
+
+在Model Registry中：
+- 实现ModelServiceServer接口
+- 转换内部模型到Protobuf模型
+- 处理gRPC错误码
+
+### 任务4：实现gRPC客户端
+
+在API Gateway中：
+- 创建gRPC客户端
+- 封装调用方法
+- 处理连接管理
+
+### 任务5：更新服务启动
+
+更新main.go：
+- Model Registry启动gRPC服务器
+- API Gateway初始化gRPC客户端
+
+---
+
+## 代码变更记录
+
+### 提交信息
+```
+feat(phase2/node2.1): implement gRPC service communication
+
+- Add Protocol Buffers definition (model.proto)
+- Generate gRPC Go code from proto
+- Implement gRPC server in Model Registry
+- Implement gRPC client in API Gateway
+- Add connection pool and timeout configuration
+```
+
+### 新增文件
+
+#### 1. shared/proto/model.proto
+**新增文件**
+Protocol Buffers定义文件，包含：
+- Model消息定义（所有字段）
+- CRUD请求/响应消息
+- ModelService服务定义（10个RPC方法）
+
+#### 2. shared/proto/model_grpc.pb.go
+**生成的文件**
+gRPC接口代码，包含：
+- ModelServiceClient接口
+- ModelServiceServer接口
+- 客户端实现
+- 服务端注册
+
+#### 3. model-registry/internal/grpc/server.go
+**新增文件**
+gRPC服务端实现：
+- GRPCServer结构体
+- 实现所有10个RPC方法
+- 错误码映射（NotFound→codes.NotFound）
+- 模型转换函数
+
+#### 4. api-gateway/pkg/grpc/client.go
+**新增文件**
+gRPC客户端封装：
+- Client结构体
+- 连接管理（Dial、Close）
+- 所有RPC方法的便捷调用
+- 保活配置
+
+### 修改的文件
+
+#### model-registry/cmd/main.go
+**更新**（待完成）
+- 启动gRPC服务器
+- 注册ModelService
+
+#### api-gateway/cmd/main.go
+**更新**（待完成）
+- 初始化gRPC客户端
+- 连接到Model Registry
+
+---
+
+## 验证步骤
+
+### 1. 生成Proto代码
+
+```bash
+# 安装protoc-gen-go和protoc-gen-go-grpc
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# 生成代码
+cd shared/proto
+protoc --go_out=. --go_opt=paths=source_relative \
+       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       model.proto
+```
+
+### 2. 启动gRPC服务端
+
+```bash
+cd model-registry
+go run cmd/main.go
+
+# 应该看到：
+# {"msg":"gRPC server starting","port":9090}
+```
+
+### 3. 测试gRPC调用
+
+```bash
+# 使用grpcurl测试
+grpcurl -plaintext localhost:9090 list model.ModelService
+grpcurl -plaintext localhost:9090 model.ModelService/GetModel
+```
+
+### 4. API Gateway调用
+
+```bash
+cd api-gateway
+go run cmd/main.go
+
+# 调用API Gateway的接口，它会通过gRPC调用Model Registry
+curl http://localhost:8080/api/v1/models
+```
+
+---
+
+## 检查清单
+
+- [ ] Proto文件定义完整
+- [ ] Go代码生成成功
+- [ ] gRPC服务端可启动
+- [ ] gRPC客户端可连接
+- [ ] 方法调用正常
+- [ ] 错误处理正确
+
+---
+
+## 下一步
+
+完成本节点后，服务间通信已完成。接下来进入：
+
+**节点2.2：Redis缓存层设计** → [继续学习](./node-2-2.md)
+
+在那里你将：
+- 集成Redis缓存
+- 实现多级缓存
+- 处理缓存穿透/击穿/雪崩
+
+---
+
+## 参考资源
+
+- [gRPC官方文档](https://grpc.io/docs/)
+- [Protocol Buffers指南](https://developers.google.com/protocol-buffers)
+- [Go gRPC教程](https://grpc.io/docs/languages/go/)
+- [gRPC vs REST](https://medium.com/@EmperorRXF/evaluating-performance-of-rest-vs-grpc-1b8bdf0b228d)
