@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
-	modelpb "maas-platform/shared/proto/model"
+	modelpb "maas-platform/shared/proto"
 )
 
 // Client wraps the gRPC model client

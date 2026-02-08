@@ -10,7 +10,7 @@ import (
 
 	"maas-platform/model-registry/internal/model"
 	"maas-platform/model-registry/internal/service"
-	modelpb "maas-platform/shared/proto/model"
+	modelpb "maas-platform/shared/proto"
 )
 
 // GRPCServer implements the gRPC ModelService
