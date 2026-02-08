@@ -31,9 +31,9 @@ func NewClient(address string) (*Client, error) {
 	}
 
 	// Connect to server
-	conn, err := grpc.Dial(address, opts...)
+	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to model service: %w", err)
+		return nil, fmt.Errorf("failed to create client connection: %w", err)
 	}
 
 	return &Client{

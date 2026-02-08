@@ -193,14 +193,18 @@ gRPC客户端封装：
 ### 修改的文件
 
 #### model-registry/cmd/main.go
-**更新**（待完成）
-- 启动gRPC服务器
-- 注册ModelService
+**更新**
+- 添加 gRPC 服务器启动（端口 9090）
+- 在 `startGRPCServer` 函数中创建并注册 ModelService
+- 使用 goroutine 并行启动 gRPC 和 HTTP 服务器
+- 导入 `google.golang.org/grpc` 和 protobuf 生成的代码
 
 #### api-gateway/cmd/main.go
-**更新**（待完成）
-- 初始化gRPC客户端
-- 连接到Model Registry
+**更新**
+- 添加 gRPC 客户端初始化
+- 使用 `grpc.NewClient` 连接到 Model Registry 服务
+- 添加连接日志和错误处理
+- 程序退出时关闭 gRPC 连接
 
 ---
 

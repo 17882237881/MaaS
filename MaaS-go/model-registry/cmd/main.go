@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,14 +11,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 
 	"maas-platform/model-registry/internal/config"
+	rpcserver "maas-platform/model-registry/internal/grpc"
 	"maas-platform/model-registry/internal/handler"
 	"maas-platform/model-registry/internal/middleware"
 	"maas-platform/model-registry/internal/repository"
 	"maas-platform/model-registry/internal/router"
 	"maas-platform/model-registry/internal/service"
 	"maas-platform/model-registry/pkg/logger"
+	modelpb "maas-platform/shared/proto/model"
 )
 
 func main() {
@@ -30,7 +34,8 @@ func main() {
 	log.Info("Starting Model Registry Service",
 		"version", "1.0.0",
 		"environment", cfg.Environment,
-		"port", cfg.Port,
+		"http_port", cfg.Port,
+		"grpc_port", 9090,
 	)
 
 	// Connect to database
@@ -61,6 +66,9 @@ func main() {
 
 	// Initialize handler
 	modelHandler := handler.NewModelHandler(modelService, log)
+
+	// Start gRPC server in a goroutine
+	go startGRPCServer(modelService, log)
 
 	// Set gin mode
 	if cfg.Environment == "production" {
@@ -126,10 +134,35 @@ func main() {
 	}()
 
 	// Start server
-	log.Info("Server starting", "addr", srv.Addr)
+	log.Info("HTTP server starting", "addr", srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal("Failed to start server", "error", err)
 	}
 
 	log.Info("Server exited")
+}
+
+// startGRPCServer starts the gRPC server
+func startGRPCServer(modelService service.ModelService, log *logger.Logger) {
+	// Create gRPC server
+	grpcServer := grpc.NewServer()
+
+	// Create gRPC service implementation
+	grpcService := rpcserver.NewGRPCServer(modelService)
+
+	// Register service
+	modelpb.RegisterModelServiceServer(grpcServer, grpcService)
+
+	// Listen on port 9090
+	lis, err := net.Listen("tcp", ":9090")
+	if err != nil {
+		log.Fatal("Failed to listen on gRPC port", "error", err)
+	}
+
+	log.Info("gRPC server starting", "port", 9090)
+
+	// Start serving
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatal("Failed to start gRPC server", "error", err)
+	}
 }
