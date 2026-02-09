@@ -21,7 +21,7 @@ import (
 	"maas-platform/model-registry/internal/router"
 	"maas-platform/model-registry/internal/service"
 	"maas-platform/model-registry/pkg/logger"
-	modelpb "maas-platform/shared/proto/model"
+	modelpb "maas-platform/shared/proto"
 )
 
 func main() {

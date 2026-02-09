@@ -15,6 +15,7 @@ import (
 	"maas-platform/api-gateway/internal/handler"
 	"maas-platform/api-gateway/internal/middleware"
 	"maas-platform/api-gateway/internal/router"
+	"maas-platform/api-gateway/internal/service"
 	rpc "maas-platform/api-gateway/pkg/grpc"
 	"maas-platform/api-gateway/pkg/logger"
 )
@@ -71,12 +72,15 @@ func main() {
 
 	// Initialize gRPC client to Model Registry
 	log.Info("Connecting to Model Registry gRPC service...", "address", cfg.Services.ModelRegistry)
-	modelClient, err := rpc.NewClient(cfg.Services.ModelRegistry)
+	grpcClient, err := rpc.NewClient(cfg.Services.ModelRegistry)
 	if err != nil {
 		log.Fatal("Failed to connect to Model Registry", "error", err)
 	}
-	defer modelClient.Close()
+	defer grpcClient.Close()
 	log.Info("Connected to Model Registry gRPC service")
+
+	// Initialize model service client
+	modelServiceClient := service.NewModelServiceClient(grpcClient, log)
 
 	// Set gin mode
 	if cfg.Environment == "production" {
@@ -124,7 +128,7 @@ func main() {
 
 	// Register routes
 	api := r.Group("/api/v1")
-	h := handler.New(cfg, log)
+	h := handler.New(cfg, log, modelServiceClient)
 	router.RegisterRoutes(api, h)
 
 	// Create HTTP server
