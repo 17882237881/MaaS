@@ -203,8 +203,24 @@ gRPC客户端封装：
 **更新**
 - 添加 gRPC 客户端初始化
 - 使用 `grpc.NewClient` 连接到 Model Registry 服务
+- 创建 `ModelServiceClient` 包装 gRPC 调用
+- 将 client 注入到 handler 中
 - 添加连接日志和错误处理
 - 程序退出时关闭 gRPC 连接
+
+#### api-gateway/internal/service/model_client.go
+**新增文件**
+- 创建 `ModelServiceClient` 封装 gRPC 调用
+- 提供 `CreateModel`, `GetModel`, `ListModels`, `DeleteModel` 方法
+- 处理错误日志记录
+
+#### api-gateway/internal/handler/handler.go
+**更新**
+- 添加 `modelClient` 字段到 Handler 结构体
+- 更新 `New()` 函数接收 modelClient 参数
+- 修改所有 model 相关 handler 方法
+- 通过 gRPC 调用 Model Registry 服务（替换硬编码 mock 数据）
+- 实现 `convertProtoModelToResponse` 转换函数
 
 ---
 
@@ -248,9 +264,34 @@ grpcurl -plaintext localhost:9090 model.ModelService/GetModel
 cd api-gateway
 go run cmd/main.go
 
+# 应该看到：
+# {"msg":"Connecting to Model Registry gRPC service...","address":"localhost:9090"}
+# {"msg":"Connected to Model Registry gRPC service"}
+
 # 调用API Gateway的接口，它会通过gRPC调用Model Registry
+curl -X POST http://localhost:8080/api/v1/models \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "test-model",
+    "version": "1.0.0",
+    "framework": "pytorch"
+  }'
+
+# 查询列表（通过gRPC调用Model Registry）
 curl http://localhost:8080/api/v1/models
+
+# 查询单个模型
+curl http://localhost:8080/api/v1/models/{id}
 ```
+
+### 5. 验证调用链
+
+确保调用链路完整：
+1. API Gateway 接收到 HTTP 请求
+2. Handler 调用 `modelClient.CreateModel()` 等方法
+3. `ModelServiceClient` 通过 gRPC 发送请求到 Model Registry
+4. Model Registry 操作数据库
+5. 返回结果通过 gRPC → HTTP → 用户
 
 ---
 
@@ -258,10 +299,13 @@ curl http://localhost:8080/api/v1/models
 
 - [ ] Proto文件定义完整
 - [ ] Go代码生成成功
-- [ ] gRPC服务端可启动
+- [ ] gRPC服务端可启动（端口9090）
 - [ ] gRPC客户端可连接
+- [ ] API Gateway handler 使用 gRPC 调用（非 mock 数据）
+- [ ] ModelServiceClient 封装完整
 - [ ] 方法调用正常
 - [ ] 错误处理正确
+- [ ] 数据流转：HTTP → gRPC → Database → gRPC → HTTP
 
 ---
 
