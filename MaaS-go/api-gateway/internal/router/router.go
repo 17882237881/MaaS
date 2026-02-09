@@ -30,7 +30,13 @@ func RegisterRoutes(r *gin.RouterGroup, h *handler.Handler) {
 			models.POST("", h.CreateModel)
 			models.GET("", h.ListModels)
 			models.GET("/:id", h.GetModel)
+			models.PUT("/:id", h.UpdateModel)
 			models.DELETE("/:id", h.DeleteModel)
+			models.PATCH("/:id/status", h.UpdateModelStatus)
+			models.POST("/:id/tags", h.AddModelTags)
+			models.DELETE("/:id/tags", h.RemoveModelTags)
+			models.GET("/:id/metadata", h.GetModelMetadata)
+			models.PUT("/:id/metadata", h.SetModelMetadata)
 		}
 
 		// Inference routes

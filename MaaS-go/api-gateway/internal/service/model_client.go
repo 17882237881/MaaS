@@ -5,7 +5,7 @@ import (
 
 	"maas-platform/api-gateway/pkg/grpc"
 	"maas-platform/api-gateway/pkg/logger"
-	modelpb "maas-platform/shared/proto/model"
+	modelpb "maas-platform/shared/proto"
 )
 
 // ModelServiceClient wraps the gRPC client for model operations
@@ -70,4 +70,68 @@ func (s *ModelServiceClient) DeleteModel(ctx context.Context, id string) error {
 		return err
 	}
 	return nil
+}
+
+// UpdateModelStatus updates model status via gRPC
+func (s *ModelServiceClient) UpdateModelStatus(ctx context.Context, id string, status string) (*modelpb.Model, error) {
+	resp, err := s.client.UpdateModelStatus(ctx, &modelpb.UpdateModelStatusRequest{
+		Id:     id,
+		Status: status,
+	})
+	if err != nil {
+		s.logger.Error("Failed to update model status via gRPC", "error", err, "id", id)
+		return nil, err
+	}
+	return resp.Model, nil
+}
+
+// AddModelTags adds tags to a model via gRPC
+func (s *ModelServiceClient) AddModelTags(ctx context.Context, modelID string, tags []string) error {
+	err := s.client.AddModelTags(ctx, &modelpb.AddModelTagsRequest{
+		ModelId: modelID,
+		Tags:    tags,
+	})
+	if err != nil {
+		s.logger.Error("Failed to add model tags via gRPC", "error", err, "model_id", modelID)
+		return err
+	}
+	return nil
+}
+
+// RemoveModelTags removes tags from a model via gRPC
+func (s *ModelServiceClient) RemoveModelTags(ctx context.Context, modelID string, tags []string) error {
+	err := s.client.RemoveModelTags(ctx, &modelpb.RemoveModelTagsRequest{
+		ModelId: modelID,
+		Tags:    tags,
+	})
+	if err != nil {
+		s.logger.Error("Failed to remove model tags via gRPC", "error", err, "model_id", modelID)
+		return err
+	}
+	return nil
+}
+
+// SetModelMetadata sets model metadata via gRPC
+func (s *ModelServiceClient) SetModelMetadata(ctx context.Context, modelID string, metadata map[string]string) error {
+	err := s.client.SetModelMetadata(ctx, &modelpb.SetModelMetadataRequest{
+		ModelId:  modelID,
+		Metadata: metadata,
+	})
+	if err != nil {
+		s.logger.Error("Failed to set model metadata via gRPC", "error", err, "model_id", modelID)
+		return err
+	}
+	return nil
+}
+
+// GetModelMetadata gets model metadata via gRPC
+func (s *ModelServiceClient) GetModelMetadata(ctx context.Context, modelID string) (map[string]string, error) {
+	resp, err := s.client.GetModelMetadata(ctx, &modelpb.GetModelMetadataRequest{
+		ModelId: modelID,
+	})
+	if err != nil {
+		s.logger.Error("Failed to get model metadata via gRPC", "error", err, "model_id", modelID)
+		return nil, err
+	}
+	return resp.Metadata, nil
 }

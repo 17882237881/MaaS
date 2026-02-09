@@ -9,7 +9,7 @@ import (
 	"maas-platform/api-gateway/internal/config"
 	"maas-platform/api-gateway/internal/service"
 	"maas-platform/api-gateway/pkg/logger"
-	modelpb "maas-platform/shared/proto/model"
+	modelpb "maas-platform/shared/proto"
 )
 
 // Handler handles HTTP requests
@@ -215,6 +215,137 @@ func (h *Handler) DeleteModel(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// UpdateModel updates a model via gRPC
+func (h *Handler) UpdateModel(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Name        string            `json:"name"`
+		Description string            `json:"description"`
+		Tags        []string          `json:"tags"`
+		Metadata    map[string]string `json:"metadata"`
+		IsPublic    bool              `json:"is_public"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.BadRequest(c, err.Error())
+		return
+	}
+
+	grpcReq := &modelpb.UpdateModelRequest{
+		Id:          id,
+		Name:        req.Name,
+		Description: req.Description,
+		Tags:        req.Tags,
+		Metadata:    req.Metadata,
+		IsPublic:    req.IsPublic,
+	}
+
+	model, err := h.modelClient.UpdateModel(c.Request.Context(), grpcReq)
+	if err != nil {
+		h.InternalError(c, err)
+		return
+	}
+
+	h.Success(c, convertProtoModelToResponse(model))
+}
+
+// UpdateModelStatus updates model status via gRPC
+func (h *Handler) UpdateModelStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.BadRequest(c, err.Error())
+		return
+	}
+
+	model, err := h.modelClient.UpdateModelStatus(c.Request.Context(), id, req.Status)
+	if err != nil {
+		h.InternalError(c, err)
+		return
+	}
+
+	h.Success(c, convertProtoModelToResponse(model))
+}
+
+// AddModelTags adds tags to a model
+func (h *Handler) AddModelTags(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Tags []string `json:"tags" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.BadRequest(c, err.Error())
+		return
+	}
+
+	err := h.modelClient.AddModelTags(c.Request.Context(), id, req.Tags)
+	if err != nil {
+		h.InternalError(c, err)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// RemoveModelTags removes tags from a model
+func (h *Handler) RemoveModelTags(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Tags []string `json:"tags" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.BadRequest(c, err.Error())
+		return
+	}
+
+	err := h.modelClient.RemoveModelTags(c.Request.Context(), id, req.Tags)
+	if err != nil {
+		h.InternalError(c, err)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// SetModelMetadata sets model metadata
+func (h *Handler) SetModelMetadata(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Metadata map[string]string `json:"metadata" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.BadRequest(c, err.Error())
+		return
+	}
+
+	err := h.modelClient.SetModelMetadata(c.Request.Context(), id, req.Metadata)
+	if err != nil {
+		h.InternalError(c, err)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// GetModelMetadata gets model metadata
+func (h *Handler) GetModelMetadata(c *gin.Context) {
+	id := c.Param("id")
+
+	metadata, err := h.modelClient.GetModelMetadata(c.Request.Context(), id)
+	if err != nil {
+		h.InternalError(c, err)
+		return
+	}
+
+	h.Success(c, gin.H{"metadata": metadata})
 }
 
 // convertProtoModelToResponse converts protobuf Model to HTTP response

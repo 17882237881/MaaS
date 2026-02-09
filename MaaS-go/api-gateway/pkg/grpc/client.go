@@ -31,9 +31,9 @@ func NewClient(address string) (*Client, error) {
 	}
 
 	// Connect to server
-	conn, err := grpc.NewClient(address, opts...)
+	conn, err := grpc.Dial(address, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create client connection: %w", err)
+		return nil, fmt.Errorf("failed to dial server: %w", err)
 	}
 
 	return &Client{
@@ -79,4 +79,27 @@ func (c *Client) DeleteModel(ctx context.Context, req *modelpb.DeleteModelReques
 // UpdateModelStatus updates model status via gRPC
 func (c *Client) UpdateModelStatus(ctx context.Context, req *modelpb.UpdateModelStatusRequest) (*modelpb.UpdateModelStatusResponse, error) {
 	return c.client.UpdateModelStatus(ctx, req)
+}
+
+// AddModelTags adds tags to a model via gRPC
+func (c *Client) AddModelTags(ctx context.Context, req *modelpb.AddModelTagsRequest) error {
+	_, err := c.client.AddModelTags(ctx, req)
+	return err
+}
+
+// RemoveModelTags removes tags from a model via gRPC
+func (c *Client) RemoveModelTags(ctx context.Context, req *modelpb.RemoveModelTagsRequest) error {
+	_, err := c.client.RemoveModelTags(ctx, req)
+	return err
+}
+
+// SetModelMetadata sets model metadata via gRPC
+func (c *Client) SetModelMetadata(ctx context.Context, req *modelpb.SetModelMetadataRequest) error {
+	_, err := c.client.SetModelMetadata(ctx, req)
+	return err
+}
+
+// GetModelMetadata gets model metadata via gRPC
+func (c *Client) GetModelMetadata(ctx context.Context, req *modelpb.GetModelMetadataRequest) (*modelpb.GetModelMetadataResponse, error) {
+	return c.client.GetModelMetadata(ctx, req)
 }
