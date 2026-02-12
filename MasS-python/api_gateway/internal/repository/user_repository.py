@@ -1,44 +1,51 @@
 ﻿from __future__ import annotations
 
-from datetime import datetime, timezone
+from api_gateway.internal.model.user import UserUpdate
+from api_gateway.internal.model.user_entity import User
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from api_gateway.internal.model.user import UserResponse, UserUpdate
 
+class UserRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-class InMemoryUserRepository:
-    def __init__(self) -> None:
-        self._users: dict[str, UserResponse] = {}
+    async def list_users(self) -> list[User]:
+        result = await self._session.execute(select(User).order_by(User.created_at))
+        return list(result.scalars().all())
 
-    async def list_users(self) -> list[UserResponse]:
-        return sorted(self._users.values(), key=lambda user: user.created_at)
+    async def get_by_id(self, user_id: str) -> User | None:
+        return await self._session.get(User, user_id)
 
-    async def get_by_id(self, user_id: str) -> UserResponse | None:
-        return self._users.get(user_id)
+    async def get_by_email(self, email: str) -> User | None:
+        result = await self._session.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none()
 
-    async def get_by_email(self, email: str) -> UserResponse | None:
-        for user in self._users.values():
-            if user.email == email:
-                return user
-        return None
+    async def create(self, user: User) -> User:
+        self._session.add(user)
+        await self._session.commit()
+        await self._session.refresh(user)
+        return user
 
-    async def create(self, user: UserResponse) -> None:
-        self._users[user.id] = user
-
-    async def update(self, user_id: str, update: UserUpdate) -> UserResponse | None:
-        existing = self._users.get(user_id)
-        if existing is None:
+    async def update(self, user_id: str, update: UserUpdate) -> User | None:
+        user = await self.get_by_id(user_id)
+        if user is None:
             return None
 
-        data = existing.model_dump()
         if update.name is not None:
-            data["name"] = update.name
+            user.name = update.name
         if update.email is not None:
-            data["email"] = update.email
-        data["updated_at"] = datetime.now(timezone.utc)
+            user.email = update.email
 
-        updated = UserResponse(**data)
-        self._users[user_id] = updated
-        return updated
+        await self._session.commit()
+        await self._session.refresh(user)
+        return user
 
     async def delete(self, user_id: str) -> bool:
-        return self._users.pop(user_id, None) is not None
+        user = await self.get_by_id(user_id)
+        if user is None:
+            return False
+
+        await self._session.delete(user)
+        await self._session.commit()
+        return True

@@ -1,0 +1,22 @@
+﻿version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: maas_postgres
+    environment:
+      POSTGRES_USER: maas
+      POSTGRES_PASSWORD: maas
+      POSTGRES_DB: maas
+    ports:
+      - "5432:5432"
+    volumes:
+      - maas_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maas"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  maas_postgres_data:

@@ -8,6 +8,7 @@ from api_gateway.internal.middleware import (
     RecoveryMiddleware,
     RequestIDMiddleware,
 )
+from api_gateway.internal.repository.database import init_db
 from api_gateway.internal.router.router import register_routes
 
 # 初始化 FastAPI 应用
@@ -35,6 +36,7 @@ register_routes(app)
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    await init_db()
     logger.info("API Gateway 服务启动中...")
 
 

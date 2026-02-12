@@ -1,6 +1,6 @@
 ﻿# 阶段1 节点2：API Gateway核心
 
-> 🏗️ **节点目标**：掌握 FastAPI 核心用法，完成 API Gateway 的中间件、健康检查与基础 CRUD 示例。
+> 🏗️ **节点目标**：掌握 FastAPI 核心用法，完成 API Gateway 的中间件、健康检查与基于真实数据库的 CRUD 示例。
 
 ## 1. 目录结构回顾
 
@@ -20,19 +20,44 @@ api_gateway/
 
 ---
 
-## 2. 中间件实现（Logger / Recovery / RequestID / CORS）
+## 2. 启动真实数据库（Docker）
 
-### 2.1 RequestID 中间件
+本节点不再使用“内存假数据库”，而是对齐 Go 版，使用 **PostgreSQL + Docker**。
+
+### 2.1 启动数据库
+
+```bash
+# 在项目根目录执行
+cd D:\code\MaaS\MasS-python
+
+# 启动 PostgreSQL 容器
+docker compose up -d postgres
+```
+
+### 2.2 设置数据库连接
+
+默认连接字符串：
+
+```
+postgresql+asyncpg://maas:maas@localhost:5432/maas
+```
+
+PowerShell 下配置环境变量：
+
+```powershell
+$env:MAAS_DATABASE_URL = "postgresql+asyncpg://maas:maas@localhost:5432/maas"
+```
+
+---
+
+## 3. 中间件实现（Logger / Recovery / RequestID / CORS）
+
+### 3.1 RequestID 中间件
 **作用**：为每个请求生成 `X-Request-ID`，方便链路追踪。
 
 文件：`api_gateway/internal/middleware/request_id.py`
 
 ```python
-from uuid import uuid4
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
-
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id = request.headers.get("X-Request-ID") or str(uuid4())
@@ -42,7 +67,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         return response
 ```
 
-### 2.2 Logger 中间件
+### 3.2 Logger 中间件
 **作用**：记录请求方法、路径、耗时、状态码等。
 
 文件：`api_gateway/internal/middleware/logger.py`
@@ -64,7 +89,7 @@ class LoggerMiddleware(BaseHTTPMiddleware):
         return response
 ```
 
-### 2.3 Recovery 中间件
+### 3.3 Recovery 中间件
 **作用**：捕获未处理异常，返回统一错误格式。
 
 文件：`api_gateway/internal/middleware/recovery.py`
@@ -82,7 +107,7 @@ class RecoveryMiddleware(BaseHTTPMiddleware):
             )
 ```
 
-### 2.4 CORS
+### 3.4 CORS
 FastAPI 内置 `CORSMiddleware`：
 
 ```python
@@ -96,38 +121,32 @@ app.add_middleware(
 
 ---
 
-## 3. CRUD 示例（用户）
+## 4. CRUD 示例（用户）- 真实数据库版本
 
-### 3.1 数据模型
-文件：`api_gateway/internal/model/user.py`
+### 4.1 ORM 模型
+文件：`api_gateway/internal/model/user_entity.py`
 
 ```python
-class UserCreate(BaseModel):
-    name: str
-    email: str
+class User(Base):
+    __tablename__ = "users"
 
-class UserUpdate(BaseModel):
-    name: str | None
-    email: str | None
-
-class UserResponse(BaseModel):
-    id: str
-    name: str
-    email: str
-    created_at: datetime
-    updated_at: datetime
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 ```
 
-### 3.2 Repository + Service
+### 4.2 Repository + Service
 文件：
 - `api_gateway/internal/repository/user_repository.py`
 - `api_gateway/internal/service/user_service.py`
 
 职责：
-- Repository：提供数据访问接口（此处用内存字典模拟）
-- Service：封装业务逻辑（校验唯一性、生成ID）
+- Repository：使用 SQLAlchemy 访问 PostgreSQL
+- Service：封装业务逻辑（校验唯一性、统一异常）
 
-### 3.3 Handler + Router
+### 4.3 Handler + Router
 文件：
 - `api_gateway/internal/handler/user_handler.py`
 - `api_gateway/internal/router/router.py`
@@ -143,29 +162,27 @@ DELETE /api/v1/users/{id}
 
 ---
 
-## 4. 入口文件组装
+## 5. 入口文件组装
 
 文件：`api_gateway/main.py`
 
 ```python
-app = FastAPI(...)
-app.add_middleware(RecoveryMiddleware)
-app.add_middleware(LoggerMiddleware)
-app.add_middleware(RequestIDMiddleware)
-app.add_middleware(CORSMiddleware, allow_origins=["*"])
-register_routes(app)
+@app.on_event("startup")
+async def startup_event() -> None:
+    await init_db()
+    logger.info("API Gateway 服务启动中...")
 ```
 
 ---
 
-## 5. 运行与验证
+## 6. 运行与验证
 
-### 5.1 启动服务
+### 6.1 启动服务
 ```bash
 uv run uvicorn api_gateway.main:app --reload --port 8000
 ```
 
-### 5.2 验证接口
+### 6.2 验证接口
 1. 访问健康检查：
 ```
 GET http://localhost:8000/health
@@ -192,11 +209,12 @@ http://localhost:8000/docs
 
 ## ✅ 完成检查清单
 
+- [ ] PostgreSQL 已通过 Docker 启动
 - [ ] FastAPI 应用可启动
 - [ ] 中间件生效（日志、请求ID、异常捕获）
-- [ ] /health 接口返回正常
+- [ ] /health 接口返回正常且数据库状态为 up
 - [ ] /docs 自动生成 OpenAPI 文档
-- [ ] CRUD 示例接口可正常调用
+- [ ] CRUD 示例接口可正常调用（真实数据库）
 
 ---
 
