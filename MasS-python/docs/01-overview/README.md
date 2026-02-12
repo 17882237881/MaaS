@@ -78,7 +78,7 @@ Model-as-a-Service（模型即服务）是一种云计算服务模式，允许�
 #### 阶段1：基础架构搭建（4周）
 
 **学习目标**：
-- 掌握Python企业级项目结构（Poetry）
+- 掌握Python企业级项目结构（uv）
 - 学会使用FastAPI开发异步RESTful API
 - 掌握SQLAlchemy 2.0进行数据库操作
 - 学会Docker容器化部署
@@ -200,7 +200,7 @@ docs/
 
 ### 开发环境准备
 1. 安装Python 3.11+
-2. 安装Poetry（包管理）
+2. 安装uv（包管理）
 3. 安装Docker & Docker Compose
 4. 安装PostgreSQL
 5. 安装Redis

@@ -36,6 +36,7 @@
 - **对象存储**：MinIO
 - **容器化**：Docker, Kubernetes
 - **监控**：Prometheus, Grafana, Jaeger (OpenTelemetry)
+- **包管理**：uv
 - **CI/CD**：GitHub Actions
 
 ## 使用方式
@@ -82,7 +83,7 @@ docs/
 │   └── node-1-5.md            # 节点1.5：数据库设计
 ├── 03-phase2/                 # 阶段2文档
 ├── 04-phase3/                 # 阶段3文档
-└── 05-phase4/                 # 阶段4文档
+├── 05-phase4/                 # 阶段4文档
 ```
 
 ## 学习成果
@@ -95,7 +96,7 @@ docs/
 - API Gateway模式
 
 ✅ **Python企业级开发**
-- 项目结构组织（Poetry + pyproject.toml）
+- 项目结构组织（uv + pyproject.toml）
 - 异步编程（asyncio + async/await）
 - 类型安全（Pydantic + mypy）
 
@@ -162,7 +163,7 @@ docs/
 | 配置管理 | Viper | Pydantic-Settings |
 | 日志 | Zap | Loguru |
 | 并发模型 | goroutine | asyncio |
-| 包管理 | go.mod | Poetry |
+| 包管理 | go.mod | uv |
 | 类型系统 | 静态类型 | 类型注解 + mypy |
 
 ## 技能标签

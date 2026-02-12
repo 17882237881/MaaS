@@ -380,12 +380,13 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: |
-          pip install poetry
-          poetry install
-      - name: Lint
-        run: |
-          poetry run ruff check .
-          poetry run mypy .
+          # Install uv
+          ls -s /root/.cargo/bin/uv /usr/local/bin/uv
+          uv sync --frozen
+          
+          # Run linting
+          uv run ruff check .
+          uv run mypy .
 
   test:
     runs-on: ubuntu-latest
@@ -408,10 +409,13 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: |
-          pip install poetry
-          poetry install
-      - name: Run tests
-        run: poetry run pytest --cov=. --cov-report=xml -v
+          # Install uv
+          ls -s /root/.cargo/bin/uv /usr/local/bin/uv
+          uv sync --frozen
+
+        # Run tests with coverage
+        - name: Run tests
+          run: uv run pytest --cov=. --cov-report=xml -v
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 

@@ -8,7 +8,7 @@
 **4周**（约20个工作日）
 
 ### 核心目标
-1. 掌握Python企业级项目结构组织（Poetry + pyproject.toml）
+1. 掌握Python企业级项目结构组织（uv + pyproject.toml）
 2. 学会使用FastAPI框架开发异步RESTful API
 3. 掌握SQLAlchemy 2.0进行数据库设计和操作
 4. 学会Docker容器化部署
@@ -74,6 +74,45 @@ async def main():
 | 并发 | `go func() {}()` | `asyncio.create_task()` |
 | 通道/队列 | `ch := make(chan T)` | `asyncio.Queue()` |
 | 错误处理 | `if err != nil { return err }` | `try/except` + 自定义Exception |
+
+### 1. Modern Python Package Management: uv
+
+**什么是 uv？**
+`uv` 是一个由 Rust 编写的极速 Python 包管理工具，旨在替代 `pip`、`pip-tools` 和 `poetry`。
+
+**为什么选择 uv？**
+- **极速**：比 pip 快 10-100 倍
+- **统一**：集成了 Python 版本管理、包管理、虚拟环境管理
+- **兼容**：使用标准的 `pyproject.toml`
+- **磁盘空间优化**：全局缓存，支持硬链接
+
+**uv vs Conda 对比**：
+| 特性 | Conda | uv |
+|------|-------|----|
+| 语言 | Python/C | Rust |
+| 包源 | Anaconda/conda-forge | PyPI |
+| 环境隔离 | 强（包含非Python依赖） | 标准 venv |
+| 速度 | 较慢 | **极速** |
+| 依赖解析 | 较慢 | **极速** |
+| 用法复杂度 | 中等 | **极简** |
+
+**常用命令**：
+```bash
+# 初始化项目
+uv init
+
+# 添加依赖
+uv add fastapi
+
+# 运行命令（自动同步环境）
+uv run python main.py
+
+# 查看依赖树
+uv tree
+
+# 同步环境（根据 lock 文件）
+uv sync
+```
 
 ### 2. FastAPI Web框架
 
@@ -274,12 +313,14 @@ FROM python:3.11-slim
 # 设置工作目录
 WORKDIR /app
 
-# 安装Poetry
-RUN pip install poetry
+# 安装uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# 复制依赖文件并安装
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root --no-dev
+# 复制依赖定义
+COPY pyproject.toml uv.lock ./
+
+# 安装依赖（无缓存模式减小镜像体积）
+RUN uv sync --frozen --no-cache
 
 # 复制源代码
 COPY . .
@@ -287,8 +328,8 @@ COPY . .
 # 暴露端口
 EXPOSE 8000
 
-# 运行（使用uvicorn）
-CMD ["poetry", "run", "uvicorn", "api_gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 运行（使用uv run）
+CMD ["uv", "run", "uvicorn", "api_gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ## 节点详解
@@ -296,32 +337,32 @@ CMD ["poetry", "run", "uvicorn", "api_gateway.main:app", "--host", "0.0.0.0", "-
 ### 节点1.1：项目初始化与架构设计（3天）
 
 **学习目标**：
-- 理解Poetry包管理工具
+- 理解uv包管理工具
 - 掌握Python微服务目录结构组织
 - 学会依赖版本管理
 - 建立Git工作流规范
 
 **技术介绍**：
 
-**1. Poetry包管理**
-Poetry是Python的现代包管理和构建工具，类似Go的Go Modules、Node.js的npm。
+**1. uv包管理**
+uv是Python的现代包管理和构建工具，比Poetry更快。
 
 **关键命令**：
 ```bash
 # 初始化项目（对标 go mod init）
-poetry init
+uv init
 
 # 安装依赖（对标 go mod download）
-poetry install
+uv sync
 
 # 添加依赖（对标 go get）
-poetry add fastapi uvicorn
+uv add fastapi uvicorn
 
 # 添加开发依赖
-poetry add --group dev pytest ruff mypy
+uv add --dev pytest ruff mypy
 
 # 查看依赖树（对标 go mod graph）
-poetry show --tree
+uv tree
 ```
 
 **2. 微服务目录结构**
@@ -350,6 +391,7 @@ MasS-python/
 │   └── proto/               # Protocol Buffers定义
 ├── tests/                    # 测试目录
 ├── pyproject.toml            # 对齐 go.mod
+├── uv.lock                   # 依赖锁文件
 ├── Makefile
 └── README.md
 ```
@@ -366,7 +408,7 @@ MasS-python/
 - **可替换性**：可以替换某层实现（如换数据库）
 
 **实操任务**：
-1. 安装Poetry，创建pyproject.toml
+1. 安装uv，创建pyproject.toml
 2. 创建api_gateway和model_registry目录结构
 3. 创建基本的main.py文件（能启动FastAPI）
 4. 初始化Git仓库，提交第一次commit
@@ -374,7 +416,7 @@ MasS-python/
 
 **检查点**：
 - [ ] 项目目录结构完整
-- [ ] `poetry install` 成功
+- [ ] `uv sync` 成功
 - [ ] 每个服务能独立启动运行
 - [ ] Git仓库初始化完成
 
@@ -874,7 +916,7 @@ CREATE TABLE models (
 
 ### 下一步
 完成阶段1后，你将掌握：
-- ✅ Python项目结构组织（Poetry）
+- ✅ Python项目结构组织（uv）
 - ✅ FastAPI开发异步RESTful API
 - ✅ SQLAlchemy 2.0数据库操作
 - ✅ Docker容器化
@@ -885,10 +927,12 @@ CREATE TABLE models (
 
 ## 常见问题
 
-### Q: Poetry install 失败？
-1. 确保Python版本 ≥ 3.11
-2. 检查网络连接（配置镜像源）
-3. 使用 `poetry install -v` 查看详细错误
+### Q: uv sync 失败？
+
+**A**:
+1. 检查网络连接（PyPI源）
+2. 尝试 `uv cache clean` 清理缓存
+3. 使用 `uv sync -v` 查看详细错误
 
 ### Q: asyncpg连接PostgreSQL失败？
 1. 确认PostgreSQL服务已启动
