@@ -73,6 +73,11 @@ func (s *GRPCServer) ListModels(ctx context.Context, req *modelpb.ListModelsRequ
 		Limit:    int(req.Limit),
 		OwnerID:  req.OwnerId,
 		TenantID: req.TenantId,
+		Tags:     req.Tags,
+	}
+	if req.IsPublic {
+		isPublic := true
+		filter.IsPublic = &isPublic
 	}
 
 	if req.Framework != "" {
@@ -113,6 +118,10 @@ func (s *GRPCServer) UpdateModel(ctx context.Context, req *modelpb.UpdateModelRe
 	if req.Description != "" {
 		updateReq.Description = &req.Description
 	}
+	if req.IsPublic {
+		isPublic := true
+		updateReq.IsPublic = &isPublic
+	}
 
 	m, err := s.service.UpdateModel(ctx, req.Id, updateReq)
 	if err != nil {
@@ -125,6 +134,58 @@ func (s *GRPCServer) UpdateModel(ctx context.Context, req *modelpb.UpdateModelRe
 	return &modelpb.UpdateModelResponse{
 		Model: convertModelToProto(m),
 	}, nil
+}
+
+// AddModelTags adds tags to model via gRPC
+func (s *GRPCServer) AddModelTags(ctx context.Context, req *modelpb.AddModelTagsRequest) (*emptypb.Empty, error) {
+	err := s.service.AddModelTags(ctx, req.ModelId, req.Tags)
+	if err != nil {
+		if err == service.ErrModelNotFound {
+			return nil, status.Errorf(codes.NotFound, "model not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to add model tags: %v", err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+// RemoveModelTags removes tags from model via gRPC
+func (s *GRPCServer) RemoveModelTags(ctx context.Context, req *modelpb.RemoveModelTagsRequest) (*emptypb.Empty, error) {
+	err := s.service.RemoveModelTags(ctx, req.ModelId, req.Tags)
+	if err != nil {
+		if err == service.ErrModelNotFound {
+			return nil, status.Errorf(codes.NotFound, "model not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to remove model tags: %v", err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+// SetModelMetadata sets metadata for model via gRPC
+func (s *GRPCServer) SetModelMetadata(ctx context.Context, req *modelpb.SetModelMetadataRequest) (*emptypb.Empty, error) {
+	err := s.service.SetModelMetadata(ctx, req.ModelId, req.Metadata)
+	if err != nil {
+		if err == service.ErrModelNotFound {
+			return nil, status.Errorf(codes.NotFound, "model not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to set model metadata: %v", err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+// GetModelMetadata gets metadata for model via gRPC
+func (s *GRPCServer) GetModelMetadata(ctx context.Context, req *modelpb.GetModelMetadataRequest) (*modelpb.GetModelMetadataResponse, error) {
+	metadata, err := s.service.GetModelMetadata(ctx, req.ModelId)
+	if err != nil {
+		if err == service.ErrModelNotFound {
+			return nil, status.Errorf(codes.NotFound, "model not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get model metadata: %v", err)
+	}
+
+	return &modelpb.GetModelMetadataResponse{Metadata: metadata}, nil
 }
 
 // DeleteModel deletes a model via gRPC
