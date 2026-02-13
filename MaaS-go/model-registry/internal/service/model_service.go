@@ -25,6 +25,10 @@ type ModelService interface {
 	UpdateModel(ctx context.Context, id string, req UpdateModelRequest) (*model.Model, error)
 	DeleteModel(ctx context.Context, id string) error
 	UpdateModelStatus(ctx context.Context, id string, status model.ModelStatus) error
+	AddModelTags(ctx context.Context, id string, tags []string) error
+	RemoveModelTags(ctx context.Context, id string, tags []string) error
+	SetModelMetadata(ctx context.Context, id string, metadata map[string]string) error
+	GetModelMetadata(ctx context.Context, id string) (map[string]string, error)
 }
 
 // CreateModelRequest represents a request to create a model
@@ -200,9 +204,42 @@ func (s *modelService) UpdateModel(ctx context.Context, id string, req UpdateMod
 
 	// Update tags if provided
 	if req.Tags != nil {
-		// This is simplified; in production, you'd calculate diff
-		if err := s.repo.SetMetadata(ctx, id, map[string]string{}); err != nil {
-			s.logger.Error("Failed to update tags", "error", err)
+		existing := make(map[string]struct{}, len(m.Tags))
+		for _, tag := range m.Tags {
+			existing[tag.Name] = struct{}{}
+		}
+
+		desired := make(map[string]struct{}, len(req.Tags))
+		for _, tag := range req.Tags {
+			desired[tag] = struct{}{}
+		}
+
+		toAdd := make([]string, 0)
+		for tag := range desired {
+			if _, ok := existing[tag]; !ok {
+				toAdd = append(toAdd, tag)
+			}
+		}
+
+		toRemove := make([]string, 0)
+		for tag := range existing {
+			if _, ok := desired[tag]; !ok {
+				toRemove = append(toRemove, tag)
+			}
+		}
+
+		if len(toAdd) > 0 {
+			if err := s.repo.AddTags(ctx, id, toAdd); err != nil {
+				s.logger.Error("Failed to add model tags", "error", err)
+				return nil, err
+			}
+		}
+
+		if len(toRemove) > 0 {
+			if err := s.repo.RemoveTags(ctx, id, toRemove); err != nil {
+				s.logger.Error("Failed to remove model tags", "error", err)
+				return nil, err
+			}
 		}
 	}
 
@@ -215,6 +252,43 @@ func (s *modelService) UpdateModel(ctx context.Context, id string, req UpdateMod
 
 	s.logger.Info("Model updated", "model_id", id)
 	return m, nil
+}
+
+// AddModelTags adds tags to a model
+func (s *modelService) AddModelTags(ctx context.Context, id string, tags []string) error {
+	if err := s.repo.AddTags(ctx, id, tags); err != nil {
+		s.logger.Error("Failed to add model tags", "id", id, "error", err)
+		return err
+	}
+	return nil
+}
+
+// RemoveModelTags removes tags from a model
+func (s *modelService) RemoveModelTags(ctx context.Context, id string, tags []string) error {
+	if err := s.repo.RemoveTags(ctx, id, tags); err != nil {
+		s.logger.Error("Failed to remove model tags", "id", id, "error", err)
+		return err
+	}
+	return nil
+}
+
+// SetModelMetadata sets metadata for a model
+func (s *modelService) SetModelMetadata(ctx context.Context, id string, metadata map[string]string) error {
+	if err := s.repo.SetMetadata(ctx, id, metadata); err != nil {
+		s.logger.Error("Failed to set model metadata", "id", id, "error", err)
+		return err
+	}
+	return nil
+}
+
+// GetModelMetadata gets metadata for a model
+func (s *modelService) GetModelMetadata(ctx context.Context, id string) (map[string]string, error) {
+	metadata, err := s.repo.GetMetadata(ctx, id)
+	if err != nil {
+		s.logger.Error("Failed to get model metadata", "id", id, "error", err)
+		return nil, err
+	}
+	return metadata, nil
 }
 
 // DeleteModel deletes a model
