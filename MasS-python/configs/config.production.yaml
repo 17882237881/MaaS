@@ -1,0 +1,5 @@
+server:
+  reload: false
+
+log:
+  level: WARNING

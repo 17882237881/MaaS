@@ -6,15 +6,15 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
+from api_gateway.internal.config.settings import settings
+
 
 class Base(DeclarativeBase):
     pass
 
 
-DATABASE_URL = os.getenv(
-    "MAAS_DATABASE_URL",
-    "postgresql+asyncpg://maas:maas@localhost:5432/maas",
-)
+# Use configuration for database URL
+DATABASE_URL = settings.database.url
 
 ENGINE: AsyncEngine = create_async_engine(
     DATABASE_URL,
